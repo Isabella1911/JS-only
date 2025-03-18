@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat</title>
+</head>
+<body>
+    <script>
+        const API_URL = 'https://chat.calicheoficial.lat/messages';
+        let messagesContainer;
+
+        const fetchMessages = async () => {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Error fetching messages');
+                return response.json();
+            } catch (error) {
+                console.error('Fetch error:', error);
+                return [];
+            }
+        };
+
+        const sendMessage = async (text) => {
+            if (!text.trim()) return;
+            const message = { text: text.trim(), user: 'dennis' };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(message),
+                });
+
+                if (!response.ok) throw new Error('Error sending message');
+
+                updateMessages();
+            } catch (error) {
+                console.error('Send error:', error);
+            }
+        };
+
+        const updateMessages = async () => {
+            if (!messagesContainer) return;
+
+            const prevScroll = messagesContainer.scrollTop;
+            const isAtBottom =
+                messagesContainer.scrollHeight - messagesContainer.clientHeight <= prevScroll + 10;
+
+            const messages = await fetchMessages();
+
+            messagesContainer.innerHTML = '';
+
+            const ul = document.createElement('ul');
+            ul.style.listStyle = 'none';
+            ul.style.padding = '0';
+
+            messages.forEach(({ user, text }) => {
+                const li = document.createElement('li');
+                li.style.padding = '5px';
+                li.style.borderBottom = '1px solid #ccc';
+
+                const strong = document.createElement('strong');
+                strong.textContent = `${user}: `;
+
+                const span = document.createElement('span');
+                span.textContent = text;
+
+                li.append(strong, span);
+                ul.append(li);
+            });
+
+            messagesContainer.append(ul);
+
+            if (isAtBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        };
+
+        const drawMessagesContainer = () => {
+            messagesContainer = document.createElement('div');
+            messagesContainer.style.maxHeight = '80vh';
+            messagesContainer.style.overflowY = 'auto';
+            messagesContainer.style.padding = '10px';
+            document.body.append(messagesContainer);
+        };
+
+        const drawInput = () => {
+            const inputContainer = document.createElement('div');
+            inputContainer.style.position = 'fixed';
+            inputContainer.style.bottom = '0';
+            inputContainer.style.width = '100%';
+            inputContainer.style.background = 'var(--bg-color)';
+            inputContainer.style.padding = '10px';
+            inputContainer.style.boxShadow = '0 -2px 5px rgba(0, 0, 0, 0.1)';
+            inputContainer.style.display = 'flex';
+            inputContainer.style.alignItems = 'center';
+            inputContainer.style.transition = 'background 0.3s, color 0.3s';
+
+            const textarea = document.createElement('textarea');
+            textarea.style.flex = '1';
+            textarea.style.marginRight = '10px';
+            textarea.style.resize = 'none';
+            textarea.maxLength = 140;
+            textarea.placeholder = 'Write a message... (max 140 chars)';
+
+            const button = document.createElement('button');
+            button.textContent = 'SEND';
+            button.onclick = () => {
+                sendMessage(textarea.value);
+                textarea.value = '';
+            };
+
+            textarea.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage(textarea.value);
+                    textarea.value = '';
+                }
+            });
+
+            inputContainer.append(textarea, button);
+            document.body.append(inputContainer);
+        };
+
+        const enableAutoRefresh = () => {
+            setInterval(updateMessages, 5000);
+        };
+
+        const setupThemeToggle = () => {
+            const button = document.createElement('button');
+            button.style.position = 'fixed';
+            button.style.top = '10px';
+            button.style.right = '10px';
+            button.textContent = 'Toggle Theme';
+            document.body.append(button);
+
+            const applyTheme = () => {
+                const darkMode = localStorage.getItem('theme') === 'dark';
+                document.documentElement.style.setProperty('--bg-color', darkMode ? '#222' : '#fff');
+                document.documentElement.style.setProperty('--text-color', darkMode ? '#fff' : '#000');
+                document.body.style.background = 'var(--bg-color)';
+                document.body.style.color = 'var(--text-color)';
+            };
+
+            button.onclick = () => {
+                const newTheme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme();
+            };
+
+            applyTheme();
+        };
+
+        const main = async () => {
+            setupThemeToggle();
+            drawMessagesContainer();
+            await updateMessages();
+            drawInput();
+            enableAutoRefresh();
+        };
+
+        main();
+    </script>
+</body>
+</html>
