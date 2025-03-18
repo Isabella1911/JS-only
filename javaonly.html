@@ -9,6 +9,8 @@
     <script>
         const API_URL = 'https://chat.calicheoficial.lat/messages';
         let messagesContainer;
+        const colors = ["#FFC300", "#FF5733", "#C70039", "#900C3F", "#581845"];
+        const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|bmp))/i;
 
         const fetchMessages = async () => {
             try {
@@ -42,23 +44,18 @@
 
         const updateMessages = async () => {
             if (!messagesContainer) return;
-
-            const prevScroll = messagesContainer.scrollTop;
-            const isAtBottom =
-                messagesContainer.scrollHeight - messagesContainer.clientHeight <= prevScroll + 10;
-
             const messages = await fetchMessages();
-
             messagesContainer.innerHTML = '';
-
+            
             const ul = document.createElement('ul');
             ul.style.listStyle = 'none';
             ul.style.padding = '0';
 
-            messages.forEach(({ user, text }) => {
+            messages.forEach(({ user, text }, index) => {
                 const li = document.createElement('li');
                 li.style.padding = '5px';
                 li.style.borderBottom = '1px solid #ccc';
+                li.style.color = colors[index % colors.length]; // Asignar color cíclicamente
 
                 const strong = document.createElement('strong');
                 strong.textContent = `${user}: `;
@@ -67,12 +64,20 @@
                 span.textContent = text;
 
                 li.append(strong, span);
+                
+                const match = text.match(imageRegex);
+                if (match) {
+                    const img = document.createElement('img');
+                    img.src = match[0];
+                    img.style.maxWidth = '200px';
+                    img.style.display = 'block';
+                    img.style.marginTop = '5px';
+                    li.append(img);
+                }
+                
                 ul.append(li);
             });
-
             messagesContainer.append(ul);
-
-            if (isAtBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
         };
 
         const drawMessagesContainer = () => {
@@ -80,6 +85,8 @@
             messagesContainer.style.maxHeight = '80vh';
             messagesContainer.style.overflowY = 'auto';
             messagesContainer.style.padding = '10px';
+            messagesContainer.style.backgroundColor = '#D3D3D3'; // Color gris claro para la caja de mensajes
+            messagesContainer.style.marginBottom = '10px'; // Espacio entre el chat y la caja de texto
             document.body.append(messagesContainer);
         };
 
@@ -88,12 +95,11 @@
             inputContainer.style.position = 'fixed';
             inputContainer.style.bottom = '0';
             inputContainer.style.width = '100%';
-            inputContainer.style.background = 'var(--bg-color)';
             inputContainer.style.padding = '10px';
-            inputContainer.style.boxShadow = '0 -2px 5px rgba(0, 0, 0, 0.1)';
             inputContainer.style.display = 'flex';
             inputContainer.style.alignItems = 'center';
-            inputContainer.style.transition = 'background 0.3s, color 0.3s';
+            inputContainer.style.backgroundColor = '#DAF7A6'; // Verde claro para la caja de entrada de mensajes
+            inputContainer.style.boxShadow = '0 -2px 5px rgba(0, 0, 0, 0.1)';
 
             const textarea = document.createElement('textarea');
             textarea.style.flex = '1';
@@ -104,6 +110,11 @@
 
             const button = document.createElement('button');
             button.textContent = 'SEND';
+            button.style.backgroundColor = '#FF5733';
+            button.style.color = '#fff';
+            button.style.border = 'none';
+            button.style.padding = '8px 15px';
+            button.style.cursor = 'pointer';
             button.onclick = () => {
                 sendMessage(textarea.value);
                 textarea.value = '';
@@ -125,33 +136,7 @@
             setInterval(updateMessages, 5000);
         };
 
-        const setupThemeToggle = () => {
-            const button = document.createElement('button');
-            button.style.position = 'fixed';
-            button.style.top = '10px';
-            button.style.right = '10px';
-            button.textContent = 'Toggle Theme';
-            document.body.append(button);
-
-            const applyTheme = () => {
-                const darkMode = localStorage.getItem('theme') === 'dark';
-                document.documentElement.style.setProperty('--bg-color', darkMode ? '#222' : '#fff');
-                document.documentElement.style.setProperty('--text-color', darkMode ? '#fff' : '#000');
-                document.body.style.background = 'var(--bg-color)';
-                document.body.style.color = 'var(--text-color)';
-            };
-
-            button.onclick = () => {
-                const newTheme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                applyTheme();
-            };
-
-            applyTheme();
-        };
-
         const main = async () => {
-            setupThemeToggle();
             drawMessagesContainer();
             await updateMessages();
             drawInput();
